@@ -749,30 +749,31 @@
                             if(confirm("データを読み込みますか？\n現在の年度データが上書きされます。")) {
                                 
                                 // --- ★ここから：日付ズレの自動修復処理 ---
-                                const fixDates = (obj) => {
-                                    if (!obj) return {};
-                                    const newObj = {};
-                                    Object.keys(obj).forEach(key => {
-                                        // 日付形式のキー（YYYY-MM-DD）かチェック
-                                        if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
-                                            const d = new Date(key);
-                                            // もしキーが「日曜日」になっていたら、1日足して「月曜日」に直す
-                                            if (d.getDay() === 0) {
-                                                d.setDate(d.getDate() + 1);
-                                                const year = d.getFullYear();
-                                                const month = ('0' + (d.getMonth() + 1)).slice(-2);
-                                                const day = ('0' + d.getDate()).slice(-2);
-                                                const newKey = `${year}-${month}-${day}`;
-                                                newObj[newKey] = obj[key];
-                                            } else {
-                                                newObj[key] = obj[key]; // 正常ならそのまま
-                                            }
-                                        } else {
-                                            newObj[key] = obj[key]; // 日付以外ならそのまま
-                                        }
-                                    });
-                                    return newObj;
-                                };
+                                const fixDates = function fixDates(obj) {
+  if (!obj) return {};
+  const newObj = {};
+
+  Object.keys(obj).forEach(function (key) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+
+      // ▼ここが重要：必ず「その週の月曜」に補正
+      let d = new Date(key);
+      d = getMonday(d);
+
+      const year = d.getFullYear();
+      const month = ('0' + (d.getMonth() + 1)).slice(-2);
+      const day = ('0' + d.getDate()).slice(-2);
+      const newKey = `${year}-${month}-${day}`;
+
+      newObj[newKey] = obj[key];
+
+    } else {
+      newObj[key] = obj[key];
+    }
+  });
+
+  return newObj;
+};
 
                                 // 読み込んだデータに修復処理を実行
                                 if(data.weeklySchedules) data.weeklySchedules = fixDates(data.weeklySchedules);
@@ -788,6 +789,18 @@
                                 if(data.pmCutPeriod) setPmCutPeriod(data.pmCutPeriod);
                                 if(data.periodLabels) setPeriodLabels(data.periodLabels);
                                 showToast("データを復元・修復しました");
+								// ▼追加（任意）
+const keys = Object.keys(data.weeklySchedules || {});
+if (keys.length > 0) {
+  setCurrentDate(getMonday(new Date(keys[0])));
+}
+								// ▼追加ここから
+loadedFiscalYearRef.current = currentFiscalYear;
+setIsDataReady(true);
+setTimeout(() => {
+  saveDataForYear(currentFiscalYear);
+}, 0);
+// ▲追加ここまで
                             }
                         } else { alert("無効なファイル形式です"); }
                     } catch (error) { alert("読み込みエラー"); }
