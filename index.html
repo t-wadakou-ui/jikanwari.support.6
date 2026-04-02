@@ -782,7 +782,25 @@
 
                                 setCourses(data.courses);
                                 if(data.basicSchedules) setBasicSchedules(data.basicSchedules);
-                                if(data.weeklySchedules) setWeeklySchedules(data.weeklySchedules);
+                                if (data.weeklySchedules) {
+  setWeeklySchedules(data.weeklySchedules);
+
+  // ▼追加ここから（超重要）
+  const keys = Object.keys(data.weeklySchedules);
+  if (keys.length > 0) {
+    const firstDate = new Date(keys[0]);
+    const targetYear = getFiscalYear(firstDate);
+
+    // 表示年度をインポートデータに合わせる
+    loadedFiscalYearRef.current = targetYear;
+    setCurrentDate(getMonday(firstDate));
+  }
+  // ▲追加ここまで
+}
+								setTimeout(() => {
+  const year = getFiscalYear(new Date(Object.keys(data.weeklySchedules)[0]));
+  saveDataForYear(year);
+}, 0);
                                 if(data.weeklyMemos) setWeeklyMemos(data.weeklyMemos);
                                 if(data.statsRange) setStatsRange(data.statsRange);
                                 if(data.termSettings) setTermSettings(data.termSettings);
